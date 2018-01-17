@@ -49,7 +49,7 @@ def READ_FILE(file_name):
     match  = float([s for s in output if '_ns' in s][0].split("_ns")[0])/1e9
     return match
 
-def INTEGRATION(A1_PRESIM, A2_INTEGRATION, OPERATING_FILE, CORES):
+def INTEGRATION(A1_PRESIM, A2_INTEGRATION, OPERATING_FILE, CORES, BENCHMARK):
     chdir(A2_INTEGRATION)
     DIMEMAS_SIM       = 'bash 02_Dimemas_sim.bash'
     system(DIMEMAS_SIM)
@@ -62,14 +62,15 @@ def INTEGRATION(A1_PRESIM, A2_INTEGRATION, OPERATING_FILE, CORES):
             DIMEMAS       = 'bash ' + FILE_DIM + ' > /dev/null 2>/dev/null'
             system(DIMEMAS)
             sleep(0.2)
-            OPERATING_FILE= OPERATING_FILE + '-C:' + NUMCORES
-            PARAVER_FILE  = A2_INTEGRATION + '/trace_SIMULATED/' +'MUSA_hydro_0000' + NUMCORES +\
+            OPERATING_FILE1= OPERATING_FILE + '-C:' + NUMCORES
+            PARAVER_FILE  = A2_INTEGRATION + '/trace_SIMULATED/' +'MUSA_' + BENCHMARK.lower()  + '_0000' + NUMCORES +\
                     'cores_presim.prv'
+            print PARAVER_FILE
             if hf.FILE_EXISTS(PARAVER_FILE):
                 OUTPUT    = READ_FILE(PARAVER_FILE)
-                OUTPUT_FILE.write("%s, %0.3f\n" % (OPERATING_FILE, OUTPUT))
+                OUTPUT_FILE.write("%s, %0.3f\n" % (OPERATING_FILE1, OUTPUT))
             else:
-                MAP_FILE.write("... PARAVER file NOT found for %s\n" %(OPERATING_FILE))
+                MAP_FILE.write("... PARAVER file NOT found for %s\n" %(OPERATING_FILE1))
         else:
             MAP_FILE.write("... PRESIM_PATH NOT FOUND in %s for executing paraver %s\n" % (A2_INTEGRATION , FILE_DIM))
 
@@ -106,9 +107,11 @@ def CHANGE_CONFIG_VALUES(path_dir, memory, rank, local, \
 def PROCESS_TRACES(params):
     SIM_DIR = params[0]
     BENCHMARK = params[1]
+    CORES = params[2]
     MAP_FILE.write("... processing trace for %s in %s\n" % (BENCHMARK, SIM_DIR))
     A1_PRESIM = SIM_DIR + "/A1_PRESIM/"
     A2_INTEGRATION = SIM_DIR + "/A2_INTEGRATION_PRESIM/"
+    print A2_INTEGRATION
     SIM_SPLIT = SIM_DIR.split("/")
     RELEVANT  = filter(lambda element: BENCHMARK in element, SIM_SPLIT)
     BENCHMARK = RELEVANT[0]
@@ -124,11 +127,11 @@ def PROCESS_TRACES(params):
     for CONFIG_FILE in ALL_CONFIGS:
         hf.CHANGE_CONFIG("latency0 = ", D0, CONFIG_FILE)
         hf.CHANGE_CONFIG("latency1 = ", D1, CONFIG_FILE)
-    PRESIM(A1_PRESIM)
+    #PRESIM(A1_PRESIM)
     sleep(0.2)
     CORRECTION = A1_PRESIM + '/correction.dat'
     if hf.FILE_EXISTS(CORRECTION) and MEMORY_MODE == '1':
-        INTEGRATION(A1_PRESIM, A2_INTEGRATION, OPERATING_FILE, CORES)
+        INTEGRATION(A1_PRESIM, A2_INTEGRATION, OPERATING_FILE, CORES, BENCHMARK)
 
 def SIM_PARAMETERS(JOB_NAMES, DRAM):
     SIM_DIRS                = list()
@@ -157,16 +160,15 @@ def main(args):
     JOB_NAMES               = list()
     JOB_LIST                = list()
 
-    BASE_DIR                = '/gpfs/scratch/bsc15/bsc15755/BIN_BENCHMARKS/'
+    BIN_DIR                = '/gpfs/scratch/bsc15/bsc15755/BIN_BENCHMARKS/'
     GPFS_BASEDIR            = '/gpfs/scratch/bsc15/bsc15755/BENCHMARKS/'
 
-    TASKSIM_TEMPLATE        = BASE_DIR + '/' + BENCHMARK + '/' + 'tasksim_twodrams.conf'
-    JOB_TEMPLATE            = BASE_DIR + '/' + BENCHMARK + '/' + 'job_tracer.bash'
-    BENCHMARK_DIR_GPFS      = BASE_DIR + '/' + BENCHMARK + "/"
+    TASKSIM_TEMPLATE        = BIN_DIR + '/' + BENCHMARK + '/' + 'tasksim_twodrams.conf'
+    JOB_TEMPLATE            = BIN_DIR + '/' + BENCHMARK + '/' + 'job_tracer.bash'
+    BENCHMARK_DIR_GPFS      = BIN_DIR + '/' + BENCHMARK + "/"
 
     RANKS                   = [ '4' ]
     TRACES                  = { 'SMALL': '-i /home/bsc15/bsc15755/HYDRO/data/input_small/input_small.nml'}
-    TRACES_NAME             = ['SMALL']
     MEMORY_MODE             = [ '1' ]
     CORES                   = [ '01', '02', '04', '08', '16' ]
     BASELINE                = [['85', '102']]
@@ -174,7 +176,7 @@ def main(args):
     #DRAM                    = [['85', '102'], ['170','204'], ['340','408'], ['680','816'], ['1360','1632']]
 
     OUTPUT_FILE.write("FILE, ExecutionTime(s)\n")
-
+    '''
     for trace, path_dir in TRACES.items():
         for memory in MEMORY_MODE:
             for rank in RANKS:
@@ -194,15 +196,14 @@ def main(args):
                     JOB_LIST   = COPY_STUFF(*ARGS_COPY_STUFF)
                     chdir(BENCHMARK_DIR_GPFS)
                     sleep(0.2)
-
     MAP_FILE.write("... waiting for jobs to finish\n")
     hf.WAIT_FOR_JOB(JOB_LIST)
-
-    JOB_NAMES = ['HYDRO-4-SMALL-1-85-102']
+    JOB_NAMES = ['ALYA.X-4-SMALL-1-85-102']
     MAP_FILE.write("... adding different simulation directories\n")
     SIM_DIRS = SIM_PARAMETERS(JOB_NAMES, DRAM)
-
-    params    = izip(SIM_DIRS, repeat(BENCHMARK))
+    '''
+    SIM_DIRS = ['/gpfs/scratch/bsc15/bsc15755/BENCHMARKS/ALYA.X/ALYA.X-4-SMALL-1-85-102/TRACE_alya.x_000004_MEMO/SIMULATION-170-204/']
+    params    = izip(SIM_DIRS, repeat(BENCHMARK), repeat(CORES))
     pool      = Pool()
     spawn_test =pool.map(PROCESS_TRACES, params)
 
