@@ -132,7 +132,7 @@ def PROCESS_TRACES(params):
 
 def SIM_PARAMETERS(JOB_NAMES, DRAM):
     SIM_DIRS                = list()
-    for job in JOB_NAMES:
+    for job_name in JOB_NAMES:
         PDIR = GPFS_BASEDIR + BENCHMARK + "/" + job_name + "/"
         ERROR_FLAG = hf.CHECK_ERROR(PDIR)
         TRACE_DIR, SIMULATION_DIR = BASE_PATHS(PDIR)
@@ -179,8 +179,7 @@ def main(args):
         for memory in MEMORY_MODE:
             for rank in RANKS:
                 for local, remote in BASELINE:
-                    MAP_FILE.write("... Launched %s with rank: %s ; memory mode : %s ; local : %s ;\
-                            remote : %s ; trace_type:  %s\n" % (BENCHMARK, rank, memory, local, remote, trace))
+                    MAP_FILE.write("... Launched %s with rank: %s ; memory mode : %s ; local : %s ; remote : %s ; trace_type:  %s\n" % (BENCHMARK, rank, memory, local, remote, trace))
                     job_name    = BENCHMARK + '-' + rank + '-' + trace + '-' + memory + '-' + local + '-' + remote
                     JOB_NAMES.append(job_name)
                     output_log  = "log-" + job_name + '-%j.out'
@@ -199,6 +198,7 @@ def main(args):
     MAP_FILE.write("... waiting for jobs to finish\n")
     hf.WAIT_FOR_JOB(JOB_LIST)
 
+    JOB_NAMES = ['HYDRO-4-SMALL-1-85-102']
     MAP_FILE.write("... adding different simulation directories\n")
     SIM_DIRS = SIM_PARAMETERS(JOB_NAMES, DRAM)
 
