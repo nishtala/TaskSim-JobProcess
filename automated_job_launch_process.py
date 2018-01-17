@@ -65,7 +65,6 @@ def INTEGRATION(A1_PRESIM, A2_INTEGRATION, OPERATING_FILE, CORES, BENCHMARK):
             OPERATING_FILE1= OPERATING_FILE + '-C:' + NUMCORES
             PARAVER_FILE  = A2_INTEGRATION + '/trace_SIMULATED/' +'MUSA_' + BENCHMARK.lower()  + '_0000' + NUMCORES +\
                     'cores_presim.prv'
-            print PARAVER_FILE
             if hf.FILE_EXISTS(PARAVER_FILE):
                 OUTPUT    = READ_FILE(PARAVER_FILE)
                 OUTPUT_FILE.write("%s, %0.3f\n" % (OPERATING_FILE1, OUTPUT))
@@ -111,7 +110,6 @@ def PROCESS_TRACES(params):
     MAP_FILE.write("... processing trace for %s in %s\n" % (BENCHMARK, SIM_DIR))
     A1_PRESIM = SIM_DIR + "/A1_PRESIM/"
     A2_INTEGRATION = SIM_DIR + "/A2_INTEGRATION_PRESIM/"
-    print A2_INTEGRATION
     SIM_SPLIT = SIM_DIR.split("/")
     RELEVANT  = filter(lambda element: BENCHMARK in element, SIM_SPLIT)
     BENCHMARK = RELEVANT[0]
@@ -127,7 +125,7 @@ def PROCESS_TRACES(params):
     for CONFIG_FILE in ALL_CONFIGS:
         hf.CHANGE_CONFIG("latency0 = ", D0, CONFIG_FILE)
         hf.CHANGE_CONFIG("latency1 = ", D1, CONFIG_FILE)
-    #PRESIM(A1_PRESIM)
+    PRESIM(A1_PRESIM)
     sleep(0.2)
     CORRECTION = A1_PRESIM + '/correction.dat'
     if hf.FILE_EXISTS(CORRECTION) and MEMORY_MODE == '1':
@@ -176,7 +174,7 @@ def main(args):
     #DRAM                    = [['85', '102'], ['170','204'], ['340','408'], ['680','816'], ['1360','1632']]
 
     OUTPUT_FILE.write("FILE, ExecutionTime(s)\n")
-    '''
+
     for trace, path_dir in TRACES.items():
         for memory in MEMORY_MODE:
             for rank in RANKS:
@@ -198,11 +196,10 @@ def main(args):
                     sleep(0.2)
     MAP_FILE.write("... waiting for jobs to finish\n")
     hf.WAIT_FOR_JOB(JOB_LIST)
-    JOB_NAMES = ['ALYA.X-4-SMALL-1-85-102']
+
     MAP_FILE.write("... adding different simulation directories\n")
     SIM_DIRS = SIM_PARAMETERS(JOB_NAMES, DRAM)
-    '''
-    SIM_DIRS = ['/gpfs/scratch/bsc15/bsc15755/BENCHMARKS/ALYA.X/ALYA.X-4-SMALL-1-85-102/TRACE_alya.x_000004_MEMO/SIMULATION-170-204/']
+
     params    = izip(SIM_DIRS, repeat(BENCHMARK), repeat(CORES))
     pool      = Pool()
     spawn_test =pool.map(PROCESS_TRACES, params)
